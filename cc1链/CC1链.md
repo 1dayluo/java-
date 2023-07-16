@@ -1,10 +1,5 @@
 # CC1链
 
-## 前言
-
-大佬们文章很细很全, 为了给自己捋思路…….就比如: 把有疑惑的点反复看,然后在不同的文章里(以及google搜索,补充基础知识etc)找到”为什么这里用XXXX”的原因.  
-
-备注: 参考是自己都看过一遍or多遍的文章, 先学的理论, 实践跟着调试相关的打算后续上传github关于漏洞复现环境(TODO)  
 
 ### 基础
 
@@ -142,7 +137,7 @@ new InvokerTransformer("exec", new Class[]{String.class}, new Object[] {"calc.ex
 
 根据刚刚利用链核心, 从 `Find Usages` 找到了 `Lazymap` 调用了 `transform` . 然后目标是最后找到 `readObject` 方法.
 
-一. **LazyMap链**
+### 一. **LazyMap**
 
 1. 首先看 `LazyMap` 下的 `get` 方法, 调用了 **transform 方法(即利用链核心下的类方法)**
     
@@ -176,7 +171,7 @@ new InvokerTransformer("exec", new Class[]{String.class}, new Object[] {"calc.ex
     **factory可控**: 反射或者构造方法控制factory. 从而使其调用指定类的transformer方法.
     
 
-二.  **`LazyMap` 的get触发点**
+### 二.  **`LazyMap` 的get触发点**
 
 查找`AnnotationInvocationHandler` 类 `get` 方法被调用的地方, 最后找到了 `invoke` 方法
 
@@ -209,7 +204,7 @@ public Object invoke(Object proxy, Method method, Object[] args) {
 
 注意这里 `memberValues` 可控
 
-三. **利用动态代理来进行 `invoke` 调用**
+### 三.  `invoke` 调用点
 
 找到能调用( `AnnotationInvocationHandler` 类的 `invoke` 方法)的点. 
 
@@ -225,7 +220,7 @@ public static Object newProxyInstance(ClassLoader loader, Class<?>[] interfaces,
 
 接下来的目标是  `readObject`中调用任意方法，调用者是`AnnotationInvocationHandler`代理对象
 
-**四.  利用动态代理**来**构造invoke调用点 (修改 `memberValues` 为指定代理类)**
+### **四.  利用动态代理**来**构造invoke调用点 (修改 `memberValues` 为指定代理类)**
 
 在 `AnnotationinvocationHandler` 类下, 因为 `this.memberValues` 可控(在实例化时传入), 而且在该类的 `readObject` 函数中, 也调用了`memberValues` . 所以可以利用反射, 将生成的代理类赋值给 `memberValues` 
 
@@ -245,7 +240,7 @@ AnnotationInvocationHandler(Class<? extends Annotation> var1, Map<String, Object
 
 这里 `memberValues` 对应上面的
 
-**五.  `readObject` 方法, 利用链反序列化入口点(重要)**
+### **五.  `readObject` 方法, 利用链反序列化入口点(重要)**
 
 因为入口点在 `sun.reflect.annotation.AnnotationInvocationHandler#readObject`  
 
